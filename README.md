@@ -15,8 +15,6 @@ npm run dev
 ```
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Frontend - Vite + React, Tailwind CSS, shadcn-ui
+- Backend - TypeScript, Express.js , Node.js 
+- Database - PostgreSQL
