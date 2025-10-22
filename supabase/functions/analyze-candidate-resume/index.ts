@@ -1,0 +1,68 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { resumeText, position } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert HR recruiter analyzing candidate resumes. Provide detailed, structured analysis in JSON format only.`
+          },
+          {
+            role: 'user',
+            content: `Analyze this resume for the position of ${position}:
+
+${resumeText}
+
+Provide a detailed JSON response with:
+{
+  "summary": "2-3 sentence overview",
+  "skillMatch": {
+    "matched": ["skill1", "skill2"],
+    "missing": ["skill3", "skill4"]
+  },
+  "strengths": ["strength1", "strength2", "strength3"],
+  "weaknesses": ["weakness1", "weakness2"],
+  "culturalFitScore": 85,
+  "redFlags": ["flag1", "flag2"] or [],
+  "overallScore": 78,
+  "recommendation": "hire/interview/reject"
+}`
+          }
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    const analysis = JSON.parse(data.choices[0].message.content);
+
+    return new Response(JSON.stringify(analysis), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error analyzing resume:', error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
