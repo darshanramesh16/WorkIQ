@@ -1,8 +1,15 @@
+// This is a Deno Edge Function. Type checking in the monorepo's TypeScript environment
+// (Node/Vite) can't resolve Deno std imports. Disable TS checks for this file so the
+// repo-level typechecker doesn't report errors here.
+// @ts-nocheck
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'http://localhost:8081',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 type EvaluateRequest = {
@@ -14,7 +21,8 @@ type EvaluateRequest = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    // Reply to preflight with allowed methods and headers
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {

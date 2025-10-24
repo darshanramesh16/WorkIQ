@@ -1,69 +1,111 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
-import { supabase } from '@/integrations/supabase/client';
-import { Navigation } from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { Megaphone, AlertCircle, Info, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Navigation } from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { Megaphone, AlertCircle, Info, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface Announcement {
+  id: string;
+  created_at: string;
+  title: string;
+  content: string;
+  priority: "low" | "normal" | "high";
+  target_roles: string[];
+  created_by: string;
+  updated_at: string; // Added updated_at
+}
 
 const Announcements = () => {
   const { user, userRole } = useAuth();
   const { toast } = useToast();
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    priority: 'normal',
-    target_roles: ['employee', 'hr', 'manager', 'admin']
+    title: "",
+    content: "",
+    priority: "normal" as "low" | "normal" | "high",
+    target_roles: ["employee", "hr", "manager", "admin"],
   });
+
+  const fetchAnnouncements = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const typedData: Announcement[] = (data || []).map((ann: any) => ({
+        ...ann,
+        priority: ann.priority as "low" | "normal" | "high",
+      }));
+      setAnnouncements(typedData);
+    }
+    setLoading(false);
+  }, [toast]);
 
   useEffect(() => {
     fetchAnnouncements();
-  }, []);
-
-  const fetchAnnouncements = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('announcements')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setAnnouncements(data || []);
-    }
-    setLoading(false);
-  };
+  }, [fetchAnnouncements]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const { error } = await supabase.from('announcements').insert([
-      { ...formData, created_by: user?.id }
-    ]);
+
+    const { error } = await supabase
+      .from("announcements")
+      .insert([{ ...formData, created_by: user?.id }]);
 
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
-      toast({ title: 'Success', description: 'Announcement posted!' });
+      toast({ title: "Success", description: "Announcement posted!" });
       setIsDialogOpen(false);
       setFormData({
-        title: '',
-        content: '',
-        priority: 'normal',
-        target_roles: ['employee', 'hr', 'manager', 'admin']
+        title: "",
+        content: "",
+        priority: "normal",
+        target_roles: ["employee", "hr", "manager", "admin"],
       });
       fetchAnnouncements();
     }
@@ -73,28 +115,29 @@ const Announcements = () => {
     setFormData({
       ...formData,
       target_roles: formData.target_roles.includes(role)
-        ? formData.target_roles.filter(r => r !== role)
-        : [...formData.target_roles, role]
+        ? formData.target_roles.filter((r) => r !== role)
+        : [...formData.target_roles, role],
     });
   };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'high':
+      case "high":
         return <AlertCircle className="w-5 h-5 text-destructive" />;
-      case 'low':
+      case "low":
         return <Info className="w-5 h-5 text-muted-foreground" />;
       default:
         return <Megaphone className="w-5 h-5 text-primary" />;
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const variants: any = {
-      high: 'destructive',
-      normal: 'default',
-      low: 'secondary'
-    };
+  const getPriorityBadge = (priority: "low" | "normal" | "high") => {
+    const variants: { [key: string]: "default" | "secondary" | "destructive" } =
+      {
+        high: "destructive",
+        normal: "default",
+        low: "secondary",
+      };
     return <Badge variant={variants[priority]}>{priority}</Badge>;
   };
 
@@ -107,9 +150,11 @@ const Announcements = () => {
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Announcements
             </h1>
-            <p className="text-muted-foreground mt-2">Company-wide notifications and updates</p>
+            <p className="text-muted-foreground mt-2">
+              Company-wide notifications and updates
+            </p>
           </div>
-          {userRole === 'admin' && (
+          {userRole === "admin" && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -120,20 +165,43 @@ const Announcements = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create Announcement</DialogTitle>
-                  <DialogDescription>Post a new announcement for the team</DialogDescription>
+                  <DialogDescription>
+                    Post a new announcement for the team
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label>Title</Label>
-                    <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+                    <Input
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Content</Label>
-                    <Textarea value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={5} required />
+                    <Textarea
+                      value={formData.content}
+                      onChange={(e) =>
+                        setFormData({ ...formData, content: e.target.value })
+                      }
+                      rows={5}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          priority: value as "low" | "normal" | "high",
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -147,9 +215,9 @@ const Announcements = () => {
                   <div className="space-y-2">
                     <Label>Target Roles</Label>
                     <div className="space-y-2">
-                      {['employee', 'hr', 'manager', 'admin'].map((role) => (
+                      {["employee", "hr", "manager", "admin"].map((role) => (
                         <div key={role} className="flex items-center space-x-2">
-                          <Checkbox 
+                          <Checkbox
                             checked={formData.target_roles.includes(role)}
                             onCheckedChange={() => handleRoleToggle(role)}
                           />
@@ -158,7 +226,9 @@ const Announcements = () => {
                       ))}
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">Post Announcement</Button>
+                  <Button type="submit" className="w-full">
+                    Post Announcement
+                  </Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -172,19 +242,30 @@ const Announcements = () => {
         ) : (
           <div className="grid gap-4">
             {announcements.map((announcement) => (
-              <Card key={announcement.id} className={announcement.priority === 'high' ? 'border-destructive' : ''}>
+              <Card
+                key={announcement.id}
+                className={
+                  announcement.priority === "high" ? "border-destructive" : ""
+                }
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-start gap-3">
-                      {getPriorityIcon(announcement.priority)}
+                      {getPriorityIcon(
+                        announcement.priority as "low" | "normal" | "high"
+                      )}
                       <div>
                         <CardTitle className="flex items-center gap-2">
                           {announcement.title}
-                          {getPriorityBadge(announcement.priority)}
+                          {getPriorityBadge(
+                            announcement.priority as "low" | "normal" | "high"
+                          )}
                         </CardTitle>
                         <CardDescription>
-                          {new Date(announcement.created_at).toLocaleDateString()} • 
-                          Target: {announcement.target_roles.join(', ')}
+                          {new Date(
+                            announcement.created_at
+                          ).toLocaleDateString()}{" "}
+                          • Target: {announcement.target_roles.join(", ")}
                         </CardDescription>
                       </div>
                     </div>

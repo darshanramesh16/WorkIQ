@@ -23,6 +23,7 @@ import AIInterview from "./pages/AIInterview";
 import HRQuestions from "./pages/HRQuestions";
 import InterviewReport from "./pages/InterviewReport";
 import NotFound from "./pages/NotFound";
+import DatabaseViewer from "./pages/DatabaseViewer";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +161,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "hr"]}>
                   <RecruitmentAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/database-viewer"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DatabaseViewer />
                 </ProtectedRoute>
               }
             />

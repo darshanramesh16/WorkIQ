@@ -8,6 +8,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Proxy /functions to your Supabase Functions origin to avoid CORS during local dev
+    proxy: {
+      '/functions': {
+        target: process.env.VITE_SUPABASE_URL || 'https://uuxkjddjkbjogcixilbu.supabase.co',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/functions/, '/functions'),
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

@@ -12,6 +12,7 @@ import {
   Calendar,
   Megaphone,
   UserCircle,
+  Database,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -35,6 +36,12 @@ export const Navigation = () => {
           </Link>
 
           <div className="flex items-center space-x-1">
+            {/* DEBUG: show current user role for troubleshooting */}
+            {userRole && (
+              <div className="hidden sm:flex items-center px-2 py-1 rounded-md bg-muted text-xs text-muted-foreground mr-2">
+                Role: <span className="ml-2 font-medium">{userRole}</span>
+              </div>
+            )}
             <Button
               variant={isActive("/") ? "default" : "ghost"}
               size="sm"
@@ -142,6 +149,19 @@ export const Navigation = () => {
                 AI Chat
               </Link>
             </Button>
+
+            {userRole === "admin" && (
+              <Button
+                variant={isActive("/database-viewer") ? "default" : "ghost"}
+                size="sm"
+                asChild
+              >
+                <Link to="/database-viewer">
+                  <Database className="w-4 h-4 mr-2" />
+                  Database
+                </Link>
+              </Button>
+            )}
 
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
