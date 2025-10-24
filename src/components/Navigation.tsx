@@ -37,11 +37,11 @@ export const Navigation = () => {
 
           <div className="flex items-center space-x-1">
             {/* DEBUG: show current user role for troubleshooting */}
-            {userRole && (
+            {/* {userRole && (
               <div className="hidden sm:flex items-center px-2 py-1 rounded-md bg-muted text-xs text-muted-foreground mr-2">
                 Role: <span className="ml-2 font-medium">{userRole}</span>
               </div>
-            )}
+            )} */}
             <Button
               variant={isActive("/") ? "default" : "ghost"}
               size="sm"
