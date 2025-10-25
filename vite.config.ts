@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     // Proxy /functions to your Supabase Functions origin to avoid CORS during local dev
     proxy: {
       '/functions': {
-        target: process.env.VITE_SUPABASE_URL || 'https://uuxkjddjkbjogcixilbu.supabase.co',
+        target: process.env.VITE_SUPABASE_URL || 'https://wxtkziumbuqsycs1kiur.supabase.co',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/functions/, '/functions'),

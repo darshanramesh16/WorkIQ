@@ -8,6 +8,132 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Mic, Volume2, Loader2, Square } from "lucide-react";
+import type { Database } from "@/types/database.types";
+import type { Json } from "@/types/database.types";
+
+// Local evaluation function
+function evaluateLocally(
+  answer: string,
+  question: string,
+  role: string,
+  jobDescription: string
+) {
+  const lower = answer.toLowerCase();
+  const questionLower = question.toLowerCase();
+  const jobSkills = jobDescription
+    .toLowerCase()
+    .split(",")
+    .map((s) => s.trim());
+
+  // Extract skills from both answer and job description
+  const skills: string[] = [];
+  const commonTechTerms = {
+    react: ["react", "jsx", "components", "hooks", "state", "props"],
+    typescript: ["typescript", "types", "interfaces", "generics"],
+    nodejs: ["node", "express", "api", "backend", "server"],
+    testing: ["test", "jest", "cypress", "unit test", "e2e"],
+    architecture: [
+      "design",
+      "architecture",
+      "system",
+      "scalable",
+      "microservices",
+    ],
+    debugging: ["debug", "fix", "issue", "bug", "error", "troubleshoot"],
+    performance: ["performance", "optimize", "efficient", "fast", "bottleneck"],
+    quality: ["quality", "clean code", "best practices", "standards", "lint"],
+  };
+
+  // Dynamic skill detection based on context
+  Object.entries(commonTechTerms).forEach(([skill, terms]) => {
+    if (terms.some((term) => lower.includes(term))) {
+      skills.push(skill.charAt(0).toUpperCase() + skill.slice(1));
+    }
+  });
+
+  // Additional skills from job description
+  jobSkills.forEach((skill) => {
+    if (lower.includes(skill) && !skills.includes(skill)) {
+      skills.push(skill.charAt(0).toUpperCase() + skill.slice(1));
+    }
+  });
+
+  // Question-specific evaluation
+  let relevance = 5;
+  if (questionLower.includes("experience") && lower.includes("experience"))
+    relevance += 2;
+  if (questionLower.includes("bug") && lower.includes("debug")) relevance += 2;
+  if (questionLower.includes("quality") && lower.includes("quality"))
+    relevance += 2;
+  if (questionLower.includes("state") && lower.includes("state"))
+    relevance += 2;
+  if (questionLower.includes("design") && lower.includes("design"))
+    relevance += 2;
+
+  // Communication scoring
+  const wordCount = answer.split(" ").length;
+  const sentenceCount = answer.split(/[.!?]+/).length - 1;
+  const communication = Math.min(
+    10,
+    Math.max(
+      5,
+      Math.floor(wordCount / 20) + // Length factor
+        (sentenceCount > 1 ? 2 : 0) + // Multiple sentences bonus
+        (lower.includes("example") ? 1 : 0) + // Examples bonus
+        (lower.includes("because") || lower.includes("since") ? 1 : 0) // Explanation bonus
+    )
+  );
+
+  // Confidence scoring
+  const confidenceMarkers = [
+    "i have",
+    "i am",
+    "i've",
+    "i believe",
+    "my experience",
+    "successfully",
+    "expertise",
+    "confident",
+    "proficient",
+  ];
+  const confidence = Math.min(
+    10,
+    5 +
+      confidenceMarkers.filter((marker) => lower.includes(marker)).length +
+      (skills.length > 0 ? 1 : 0)
+  );
+
+  // Calculate overall fit
+  const overall_fit = Math.min(
+    100,
+    Math.floor((communication * 3 + confidence * 3 + relevance * 4) * 3.3)
+  );
+
+  // Generate dynamic summary
+  let summary = "";
+  if (overall_fit >= 85) {
+    summary = `Excellent response with strong ${skills.join(
+      ", "
+    )} expertise. Clear communication and relevant examples.`;
+  } else if (overall_fit >= 70) {
+    summary = `Good technical answer showing ${
+      skills.length > 0
+        ? skills.join(", ") + " knowledge"
+        : "relevant experience"
+    }. Could provide more specific examples.`;
+  } else {
+    summary = `Basic response that could be enhanced with more technical details and concrete examples.`;
+  }
+
+  return {
+    skills,
+    communication,
+    confidence,
+    relevance,
+    overall_fit,
+    summary,
+  };
+}
 
 // Question sets
 const QUESTION_SETS = {
@@ -39,6 +165,69 @@ export default function AIInterview() {
   const recognitionRef = useRef<any>(null);
 
   const questions = QUESTION_SETS.technical;
+
+  const saveInterviewResults = async () => {
+    try {
+      // Calculate average scores
+      const totalScores = responses.reduce(
+        (acc, response) => ({
+          communication: acc.communication + response.evaluation.communication,
+          confidence: acc.confidence + response.evaluation.confidence,
+          relevance: acc.relevance + response.evaluation.relevance,
+          overall_fit: acc.overall_fit + response.evaluation.overall_fit,
+        }),
+        { communication: 0, confidence: 0, relevance: 0, overall_fit: 0 }
+      );
+
+      const avgScores = {
+        communication:
+          Math.round((totalScores.communication / responses.length) * 10) / 10,
+        confidence:
+          Math.round((totalScores.confidence / responses.length) * 10) / 10,
+        relevance:
+          Math.round((totalScores.relevance / responses.length) * 10) / 10,
+        overall_fit:
+          Math.round((totalScores.overall_fit / responses.length) * 10) / 10,
+      };
+
+      // Get all unique skills
+      const allSkills = new Set<string>();
+      responses.forEach((response) =>
+        response.evaluation.skills.forEach((skill) => allSkills.add(skill))
+      );
+
+      const result = {
+        name: "Candidate", // You can add a name input field if needed
+        job_role: role,
+        status: "completed",
+        scores: {
+          ...avgScores,
+          details: responses,
+          skills: Array.from(allSkills),
+        } as Json,
+        summary: `Interview completed with overall fit score of ${
+          avgScores.overall_fit
+        }%. Demonstrated skills: ${Array.from(allSkills).join(", ")}`,
+        created_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from("interview_results").insert(result);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Interview results have been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving interview results:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save interview results.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmitResponse = async (answer: string) => {
     try {
@@ -80,34 +269,113 @@ export default function AIInterview() {
         }),
       });
 
-      let evaluation = {
-        skills: [],
-        communication: 7,
-        confidence: 7,
-        relevance: 7,
-        overall_fit: 70,
-        summary: "Response recorded successfully.",
-      };
+      let evaluation;
 
       if (response.ok) {
         try {
           evaluation = await response.json();
         } catch (e) {
           console.log("Could not parse evaluation response");
+          evaluation = evaluateLocally(
+            answer,
+            questions[currentQuestion],
+            role,
+            jobDescription
+          );
         }
+      } else {
+        evaluation = evaluateLocally(
+          answer,
+          questions[currentQuestion],
+          role,
+          jobDescription
+        );
       }
 
       // Store the response and evaluation
-      setResponses((prev) => [
-        ...prev,
+      const updatedResponses = [
+        ...responses,
         {
           question: questions[currentQuestion],
           answer,
           evaluation,
         },
-      ]);
+      ];
+      setResponses(updatedResponses);
 
-      // Removed duplicate toast
+      // If this was the last question, save all results
+      if (currentQuestion === questions.length - 1) {
+        // Calculate average scores
+        const totalScores = updatedResponses.reduce(
+          (acc, response) => ({
+            communication:
+              acc.communication + response.evaluation.communication,
+            confidence: acc.confidence + response.evaluation.confidence,
+            relevance: acc.relevance + response.evaluation.relevance,
+            overall_fit: acc.overall_fit + response.evaluation.overall_fit,
+          }),
+          { communication: 0, confidence: 0, relevance: 0, overall_fit: 0 }
+        );
+
+        const avgScores = {
+          communication:
+            Math.round(
+              (totalScores.communication / updatedResponses.length) * 10
+            ) / 10,
+          confidence:
+            Math.round(
+              (totalScores.confidence / updatedResponses.length) * 10
+            ) / 10,
+          relevance:
+            Math.round((totalScores.relevance / updatedResponses.length) * 10) /
+            10,
+          overall_fit:
+            Math.round(
+              (totalScores.overall_fit / updatedResponses.length) * 10
+            ) / 10,
+        };
+
+        // Get all unique skills
+        const allSkills = new Set<string>();
+        updatedResponses.forEach((response) =>
+          response.evaluation.skills.forEach((skill) => allSkills.add(skill))
+        );
+
+        try {
+          const result = {
+            name: "Candidate", // You can add a name input field if needed
+            job_role: role,
+            status: "completed",
+            scores: {
+              ...avgScores,
+              details: updatedResponses,
+              skills: Array.from(allSkills),
+            } as Json,
+            summary: `Interview completed with overall fit score of ${
+              avgScores.overall_fit
+            }%. Demonstrated skills: ${Array.from(allSkills).join(", ")}`,
+            created_at: new Date().toISOString(),
+          };
+
+          const { error } = await supabase
+            .from("interview_results")
+            .insert(result);
+
+          if (error) throw error;
+
+          toast({
+            title: "Success",
+            description: "Interview results have been saved for HR review.",
+          });
+        } catch (error) {
+          console.error("Error saving interview results:", error);
+          toast({
+            title: "Error",
+            description: "Failed to save interview results.",
+            variant: "destructive",
+          });
+        }
+      } // Removed duplicate toast
     } catch (error: any) {
       // Silently handle the error and continue
       console.log("Error during evaluation:", error);

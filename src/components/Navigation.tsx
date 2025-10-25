@@ -112,6 +112,16 @@ export const Navigation = () => {
                     AI Resume
                   </Link>
                 </Button>
+                <Button
+                  variant={isActive("/interview-results") ? "default" : "ghost"}
+                  size="sm"
+                  asChild
+                >
+                  <Link to="/interview-results">
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Interview Results
+                  </Link>
+                </Button>
               </>
             )}
 
