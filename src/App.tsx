@@ -22,6 +22,7 @@ import RecruitmentAnalytics from "./pages/RecruitmentAnalytics";
 import AIInterview from "./pages/AIInterview";
 import HRQuestions from "./pages/HRQuestions";
 import InterviewReport from "./pages/InterviewReport";
+import AIInterviewResults from "./pages/AIInterviewResults";
 import NotFound from "./pages/NotFound";
 import DatabaseViewer from "./pages/DatabaseViewer";
 
@@ -153,6 +154,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "hr"]}>
                   <InterviewReport />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-interview-results"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "hr"]}>
+                  <AIInterviewResults />
                 </ProtectedRoute>
               }
             />

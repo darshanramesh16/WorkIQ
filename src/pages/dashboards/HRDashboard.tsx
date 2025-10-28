@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ClipboardList } from "lucide-react";
 
 export const HRDashboard = () => {
   const { data: stats } = useQuery({
@@ -188,6 +189,16 @@ export const HRDashboard = () => {
                 <h3 className="font-semibold">Recruitment Analytics</h3>
                 <p className="text-sm text-muted-foreground">
                   AI-powered hiring insights
+                </p>
+              </a>
+              <a
+                href="/ai-interview-results"
+                className="p-4 border rounded-lg hover:bg-accent transition-colors"
+              >
+                <ClipboardList className="w-6 h-6 mb-2 text-primary" />
+                <h3 className="font-semibold">AI Interview Results</h3>
+                <p className="text-sm text-muted-foreground">
+                  View interview answers
                 </p>
               </a>
               {/* <a href="/hr-questions" className="p-4 border rounded-lg hover:bg-accent transition-colors">

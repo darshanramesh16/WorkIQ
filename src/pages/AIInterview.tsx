@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { Mic, Volume2, Loader2, Square } from "lucide-react";
 
 // Question sets
@@ -21,6 +22,7 @@ const QUESTION_SETS = {
 };
 
 export default function AIInterview() {
+  const { user } = useAuth();
   const [role, setRole] = useState("Software Engineer");
   const [jobDescription, setJobDescription] = useState(
     "React, TypeScript, Node.js"
@@ -30,6 +32,8 @@ export default function AIInterview() {
     Array<{ question: string; answer: string; evaluation: any }>
   >([]);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [candidateId, setCandidateId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Voice states
@@ -39,6 +43,48 @@ export default function AIInterview() {
   const recognitionRef = useRef<any>(null);
 
   const questions = QUESTION_SETS.technical;
+
+  // Ensure a candidate exists for the logged in user
+  const ensureCandidate = async (): Promise<string | null> => {
+    if (!user) return null;
+    // Try find existing candidate by user_id
+    const { data: existing } = await supabase
+      .from("candidates")
+      .select("id, name, job_role, user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (existing?.id) {
+      if (existing.name !== "Emily Davis") {
+        await supabase
+          .from("candidates")
+          .update({ name: "Emily Davis" })
+          .eq("id", existing.id);
+      }
+      return existing.id;
+    }
+
+    // Try get employee details for better name/role
+    const { data: emp } = await supabase
+      .from("employees")
+      .select("full_name, position, email")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const insert = {
+      // For the current milestone, force candidate name to Emily Davis
+      name: "Emily Davis",
+      email: emp?.email || user.email || "",
+      job_role: emp?.position || role,
+      status: "active",
+      user_id: user.id,
+    } as any;
+    const { data: created } = await supabase
+      .from("candidates")
+      .insert(insert)
+      .select("id")
+      .maybeSingle();
+    return created?.id ?? null;
+  };
 
   const handleSubmitResponse = async (answer: string) => {
     try {
@@ -106,6 +152,112 @@ export default function AIInterview() {
           evaluation,
         },
       ]);
+
+      // Persist to Supabase so HR can view it
+      try {
+        // Ensure candidate
+        const cid = candidateId || (await ensureCandidate());
+        if (!cid) {
+          throw new Error("No candidate id");
+        }
+        if (!candidateId) setCandidateId(cid);
+
+        // Ensure session exists
+        let sid = sessionId;
+        if (!sid) {
+          const { data: createdSession, error: createErr } = await supabase
+            .from("interview_sessions")
+            .insert({
+              candidate_id: cid,
+              mode: "chat",
+              start_time: new Date().toISOString(),
+              transcript: [],
+              analysis_json: { responses: [] },
+              created_by: user?.id ?? null,
+            })
+            .select("id")
+            .maybeSingle();
+          if (createErr) {
+            console.error("Failed to create interview session", createErr);
+            toast({
+              title: "Save failed",
+              description: "Could not start interview session (RLS/policy?).",
+              variant: "destructive",
+            });
+          }
+          sid = createdSession?.id || null;
+          if (sid) setSessionId(sid);
+        }
+
+        if (sid) {
+          // Append transcript and responses in analysis_json
+          const updatedResponses = [
+            ...responses,
+            { question: questions[currentQuestion], answer, evaluation },
+          ];
+          const updatedTranscript = [
+            ...(Array.isArray([] as any) ? ([] as any) : []),
+          ];
+          // Keep a light transcript: user answer as a message
+          updatedTranscript.push({
+            role: "user",
+            content: answer,
+            ts: Date.now(),
+          });
+
+          // Merge with existing analysis if present to avoid overwriting earlier answers
+          const { data: existingSession } = await supabase
+            .from("interview_sessions")
+            .select("analysis_json, transcript")
+            .eq("id", sid)
+            .maybeSingle();
+
+          const priorResponses: any[] = Array.isArray(
+            existingSession?.analysis_json?.responses
+          )
+            ? existingSession!.analysis_json.responses
+            : [];
+          const analysis = {
+            summary:
+              evaluation?.summary ||
+              existingSession?.analysis_json?.summary ||
+              "",
+            responses: [
+              ...priorResponses,
+              { question: questions[currentQuestion], answer, evaluation },
+            ],
+          } as any;
+
+          // If last question, set end_time
+          const finishFields =
+            currentQuestion === questions.length - 1
+              ? { end_time: new Date().toISOString() }
+              : {};
+
+          const { error: updateErr } = await supabase
+            .from("interview_sessions")
+            .update({
+              transcript:
+                existingSession?.transcript &&
+                Array.isArray(existingSession.transcript)
+                  ? [...existingSession.transcript, ...updatedTranscript]
+                  : updatedTranscript,
+              analysis_json: analysis,
+              ...finishFields,
+            })
+            .eq("id", sid);
+          if (updateErr) {
+            console.error("Failed to update interview session", updateErr);
+            toast({
+              title: "Save failed",
+              description: "Could not save your answer (RLS/policy?).",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to persist interview session", e);
+      }
 
       // Removed duplicate toast
     } catch (error: any) {
@@ -406,53 +558,7 @@ export default function AIInterview() {
           </Card>
         )}
 
-        {/* Display Previous Responses and Evaluations */}
-        {responses.map((response, index) => (
-          <Card key={index} className="mb-4">
-            <CardHeader>
-              <CardTitle>Question {index + 1} Results</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold">Question:</h3>
-                  <p>{response.question}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold">Your Answer:</h3>
-                  <p>{response.answer}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold">AI Evaluation:</h3>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div>
-                      Communication: {response.evaluation.communication}/10
-                    </div>
-                    <div>Confidence: {response.evaluation.confidence}/10</div>
-                    <div>Relevance: {response.evaluation.relevance}/10</div>
-                    <div>Overall Fit: {response.evaluation.overall_fit}%</div>
-                  </div>
-                  <div className="mt-2">
-                    <h4 className="font-semibold">Skills Demonstrated:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {response.evaluation.skills.map(
-                        (skill: string, i: number) => (
-                          <Badge key={i} variant="secondary">
-                            {skill}
-                          </Badge>
-                        )
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <h4 className="font-semibold">Summary:</h4>
-                    <p>{response.evaluation.summary}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {/* Results are intentionally not shown on the employee page. */}
       </div>
     </div>
   );

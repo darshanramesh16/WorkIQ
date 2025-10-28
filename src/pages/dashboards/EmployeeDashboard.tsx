@@ -77,6 +77,14 @@ export const EmployeeDashboard = () => {
         <p className="text-sm md:text-base text-muted-foreground">
           Welcome back, {employeeData?.employee?.full_name || "Employee"}!
         </p>
+        {employeeData?.employee?.employee_id && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Employee ID:{" "}
+            <span className="font-mono font-semibold text-primary">
+              {employeeData.employee.employee_id}
+            </span>
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
