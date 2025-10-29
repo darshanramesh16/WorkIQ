@@ -13,6 +13,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
+// Add print-specific styles
+const printStyles = `
+  @media print {
+    .navigation-container, .candidate-info, .download-button, .sessions-table {
+      display: none !important;
+    }
+    .interview-results-container {
+      margin-top: 0 !important;
+    }
+    @page {
+      size: auto;
+      margin: 10mm;
+    }
+  }
+`;
+
 export default function InterviewReport() {
   const params = useParams();
   const candidateId = params.candidateId as string;
@@ -142,7 +158,13 @@ export default function InterviewReport() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      <Navigation />
+      {/* Add style tag for print styles */}
+      <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+      
+      <div className="navigation-container">
+        <Navigation />
+      </div>
+      
       <div className="container mx-auto px-4 py-6 md:py-8">
         <Card className="shadow-lg">
           <CardHeader>
@@ -150,7 +172,7 @@ export default function InterviewReport() {
           </CardHeader>
           <CardContent className="space-y-6">
             {candidate && (
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="candidate-info grid gap-4 md:grid-cols-4">
                 <div>
                   <span className="text-muted-foreground text-sm">Name</span>
                   <div className="font-semibold">{candidate.name}</div>
@@ -172,39 +194,41 @@ export default function InterviewReport() {
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="download-button flex justify-end">
               <Button onClick={() => window.print()}>Download / Print</Button>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Summary</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>{s.id.slice(0, 8)}…</TableCell>
-                    <TableCell className="capitalize">{s.mode}</TableCell>
-                    <TableCell>
-                      {new Date(s.start_time).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {s.end_time ? new Date(s.end_time).toLocaleString() : "-"}
-                    </TableCell>
-                    <TableCell>{s.analysis_json?.summary ?? "-"}</TableCell>
+            <div className="sessions-table">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Session</TableHead>
+                    <TableHead>Mode</TableHead>
+                    <TableHead>Start</TableHead>
+                    <TableHead>End</TableHead>
+                    <TableHead>Summary</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>{s.id.slice(0, 8)}…</TableCell>
+                      <TableCell className="capitalize">{s.mode}</TableCell>
+                      <TableCell>
+                        {new Date(s.start_time).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {s.end_time ? new Date(s.end_time).toLocaleString() : "-"}
+                      </TableCell>
+                      <TableCell>{s.analysis_json?.summary ?? "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {sessions[0]?.analysis_json?.responses && (
-              <div>
+              <div className="interview-results-container">
                 <h3 className="font-semibold mb-2">
                   Per-question Results (latest session)
                 </h3>
@@ -258,35 +282,6 @@ export default function InterviewReport() {
                       </Card>
                     )
                   )}
-                </div>
-              </div>
-            )}
-
-            {sessions[0]?.transcript && (
-              <div>
-                <h3 className="font-semibold mb-2">
-                  Transcript (latest session)
-                </h3>
-                <div className="border rounded p-3 space-y-2 max-h-96 overflow-auto bg-background/30">
-                  {(sessions[0].transcript as any[]).map((m, i) => (
-                    <div
-                      key={i}
-                      className={m.role === "user" ? "text-right" : "text-left"}
-                    >
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {m.ts ? new Date(m.ts).toLocaleTimeString() : ""}
-                      </span>
-                      <div
-                        className={`mt-1 inline-block px-2 py-1 rounded ${
-                          m.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
-                      >
-                        {m.content}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}

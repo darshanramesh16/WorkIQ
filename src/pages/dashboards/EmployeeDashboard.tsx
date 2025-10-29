@@ -10,6 +10,7 @@ import {
   TrendingUp,
   BookOpen,
   Target,
+  UserCircle,
 } from "lucide-react";
 import {
   Table,

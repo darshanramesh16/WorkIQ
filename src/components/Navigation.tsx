@@ -116,16 +116,28 @@ export const Navigation = () => {
             )}
 
             {userRole === "employee" && (
-              <Button
-                variant={isActive("/leave-management") ? "default" : "ghost"}
-                size="sm"
-                asChild
-              >
-                <Link to="/leave-management">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  My Leaves
-                </Link>
-              </Button>
+              <>
+                <Button
+                  variant={isActive("/leave-management") ? "default" : "ghost"}
+                  size="sm"
+                  asChild
+                >
+                  <Link to="/leave-management">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    My Leaves
+                  </Link>
+                </Button>
+                <Button
+                  variant={isActive("/employee-interviews") ? "default" : "ghost"}
+                  size="sm"
+                  asChild
+                >
+                  <Link to="/employee-interviews">
+                    <UserCircle className="w-4 h-4 mr-2" />
+                    Interviews
+                  </Link>
+                </Button>
+              </>
             )}
 
             <Button
