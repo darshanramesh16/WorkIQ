@@ -128,7 +128,9 @@ export const Navigation = () => {
                   </Link>
                 </Button>
                 <Button
-                  variant={isActive("/employee-interviews") ? "default" : "ghost"}
+                  variant={
+                    isActive("/employee-interviews") ? "default" : "ghost"
+                  }
                   size="sm"
                   asChild
                 >

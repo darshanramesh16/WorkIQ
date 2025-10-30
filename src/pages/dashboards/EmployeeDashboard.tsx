@@ -128,7 +128,7 @@ export const EmployeeDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {employeeData?.latestReview?.rating || "N/A"}/5
+              {employeeData?.latestReview?.rating || "75"}
             </div>
           </CardContent>
         </Card>
@@ -233,7 +233,7 @@ export const EmployeeDashboard = () => {
               <MessageSquare className="w-6 h-6 mb-2 text-primary" />
               <h3 className="font-semibold">AI Interview</h3>
               <p className="text-sm text-muted-foreground">
-                Practice interview (chat or voice)
+                Interview (chat or voice)
               </p>
             </a>
             <a

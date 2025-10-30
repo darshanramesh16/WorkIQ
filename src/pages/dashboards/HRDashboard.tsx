@@ -181,16 +181,7 @@ export const HRDashboard = () => {
                   Advanced AI insights & ranking
                 </p>
               </a> */}
-              <a
-                href="/recruitment-analytics"
-                className="p-4 border rounded-lg hover:bg-accent transition-colors"
-              >
-                <BarChart3 className="w-6 h-6 mb-2 text-primary" />
-                <h3 className="font-semibold">Recruitment Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  AI-powered hiring insights
-                </p>
-              </a>
+
               <a
                 href="/ai-interview-results"
                 className="p-4 border rounded-lg hover:bg-accent transition-colors"

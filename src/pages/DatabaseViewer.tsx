@@ -256,7 +256,7 @@ export default function DatabaseViewer() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="text-lg">Column Schema</CardTitle>
             </CardHeader>
@@ -279,7 +279,7 @@ export default function DatabaseViewer() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardHeader>

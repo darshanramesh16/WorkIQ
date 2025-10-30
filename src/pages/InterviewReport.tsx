@@ -67,7 +67,7 @@ export default function InterviewReport() {
       {
         question: "Tell me about your experience with React and TypeScript.",
         answer:
-          "I have been working with React for over 2 years and TypeScript for about 1 year. I love the type safety that TypeScript provides and how it helps catch errors early. I've built several production applications including a dashboard for tracking user analytics and an e-commerce platform.",
+          "I have been working with React for over 2 years and TypeScript for about 1 year.",
         evaluation: {
           communication: 8,
           confidence: 9,
@@ -81,8 +81,7 @@ export default function InterviewReport() {
       {
         question:
           "Describe a challenging bug you fixed and how you approached it.",
-        answer:
-          "There was a memory leak in a React component that was causing the application to crash after extended use. I used Chrome DevTools to identify the issue, traced it to an event listener not being cleaned up. I implemented proper useEffect cleanup hooks and fixed the issue.",
+        answer: "Syntax Errors.",
         evaluation: {
           communication: 7,
           confidence: 8,
@@ -95,8 +94,7 @@ export default function InterviewReport() {
       },
       {
         question: "How do you ensure code quality in your projects?",
-        answer:
-          "I follow several practices: writing unit tests with Jest, conducting code reviews with my team, using ESLint for code standards, and maintaining consistent coding conventions. I also refactor code regularly to improve maintainability.",
+        answer: "I follow several practices.",
         evaluation: {
           communication: 8,
           confidence: 8,
@@ -109,8 +107,7 @@ export default function InterviewReport() {
       },
       {
         question: "Explain your preferred state management approach.",
-        answer:
-          "I prefer using React hooks with Context API for smaller applications, and Redux for larger complex applications. For server state, I use React Query. Each has its place depending on the project's complexity and requirements.",
+        answer: "I prefer using React hooks.",
         evaluation: {
           communication: 7,
           confidence: 8,
@@ -123,8 +120,7 @@ export default function InterviewReport() {
       },
       {
         question: "Describe a system you designed from start to finish.",
-        answer:
-          "I designed a real-time notification system using WebSockets. I started by analyzing requirements, designed the database schema, created the backend API with Node.js, implemented the frontend with React, and deployed it using Docker. The system handles millions of notifications daily.",
+        answer: "I designed a real-time notification system.",
         evaluation: {
           communication: 9,
           confidence: 9,
@@ -160,11 +156,11 @@ export default function InterviewReport() {
     <div className="min-h-screen bg-gradient-subtle">
       {/* Add style tag for print styles */}
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
-      
+
       <div className="navigation-container">
         <Navigation />
       </div>
-      
+
       <div className="container mx-auto px-4 py-6 md:py-8">
         <Card className="shadow-lg">
           <CardHeader>
@@ -218,7 +214,9 @@ export default function InterviewReport() {
                         {new Date(s.start_time).toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        {s.end_time ? new Date(s.end_time).toLocaleString() : "-"}
+                        {s.end_time
+                          ? new Date(s.end_time).toLocaleString()
+                          : "-"}
                       </TableCell>
                       <TableCell>{s.analysis_json?.summary ?? "-"}</TableCell>
                     </TableRow>
