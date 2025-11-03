@@ -23,7 +23,6 @@ import AIInterview from "./pages/AIInterview";
 import HRQuestions from "./pages/HRQuestions";
 import InterviewReport from "./pages/InterviewReport";
 import AIInterviewResults from "./pages/AIInterviewResults";
-import NotFound from "./pages/NotFound";
 import DatabaseViewer from "./pages/DatabaseViewer";
 
 const queryClient = new QueryClient();
@@ -181,7 +180,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<NotFound />} />
+            {/* <Route path="*" element={<NotFound />} /> */}
           </Routes>
         </AuthProvider>
       </BrowserRouter>

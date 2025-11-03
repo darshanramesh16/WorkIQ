@@ -127,7 +127,7 @@ export const Navigation = () => {
                     My Leaves
                   </Link>
                 </Button>
-                <Button
+                {/* <Button
                   variant={
                     isActive("/employee-interviews") ? "default" : "ghost"
                   }
@@ -138,7 +138,7 @@ export const Navigation = () => {
                     <UserCircle className="w-4 h-4 mr-2" />
                     Interviews
                   </Link>
-                </Button>
+                </Button> */}
               </>
             )}
 
